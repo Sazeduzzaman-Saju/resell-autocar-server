@@ -62,19 +62,33 @@ async function run() {
 
 
 
-        app.get('/cars', async (req, res) => {
-            const query = {}
-            const cursor = carCollection.find(query)
-            const cars = await cursor.toArray();
-            res.send(cars)
-        })
-
         app.get('/cars/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
             const singleCars = await carCollection.findOne(query);
             res.send(singleCars);
         })
+
+
+        app.post('/cars', async (req, res) => {
+            const sellerPost = req.body;
+            const result = await carCollection.insertOne(sellerPost);
+            res.send(result);
+        })
+        app.get('/cars', async (req, res) => {
+            const query = {}
+            const cars = await carCollection.find(query).toArray();
+            res.send(cars)
+        })
+        app.get('/cars/seller/:email', async (req, res) => {
+            const email = req.params.email
+            console.log(req.params.email)
+            const query = { email: email }
+            const cursor = carCollection.find(query)
+            const cars = await cursor.toArray();
+            res.send(cars)
+        })
+
 
 
         app.post('/reportedpost', async (req, res) => {
@@ -144,6 +158,8 @@ async function run() {
             const result = await usersCollection.insertOne(user)
             res.send(result)
         })
+
+
         app.get('/users/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
@@ -186,6 +202,27 @@ async function run() {
             const updatedDoc = {
                 $set: {
                     role: 'admin'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+        })
+
+        app.put('/users/admin/verified/:id', verifyUser, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ message: 'Forbidden Access' })
+            }
+
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    useVerify: 'verified'
                 }
             }
             const result = await usersCollection.updateOne(filter, updatedDoc, options);

@@ -44,6 +44,7 @@ async function run() {
         const carCollection = client.db('AutoCar').collection('cars');
         const wishListCollection = client.db('AutoCar').collection('wishList');
         const usersCollection = client.db('AutoCar').collection('users');
+        const reportedPostCollection = client.db('AutoCar').collection('reportPost');
 
         app.get('/carCategories', async (req, res) => {
             const query = {}
@@ -72,15 +73,23 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
             const singleCars = await carCollection.findOne(query);
-            console.log(singleCars)
             res.send(singleCars);
         })
 
 
+        app.post('/reportedpost', async (req, res) => {
+            const reportPost = req.body;
+            const result = await reportedPostCollection.insertOne(reportPost);
+            res.send(result)
+        })
+        app.get('/reportedpost', async (req, res) => {
+            const query = {}
+            const reportedPost = await reportedPostCollection.find(query).toArray();
+            res.send(reportedPost)
+        })
         app.post('/wishlist', async (req, res) => {
             const wishList = req.body;
             const result = await wishListCollection.insertOne(wishList);
-            console.log(result)
             res.send(result)
         })
 
@@ -91,7 +100,12 @@ async function run() {
             const allbookings = await cursor.toArray();
             res.send(allbookings)
         })
-
+        app.delete('/wishlist/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await wishListCollection.deleteOne(query);
+            res.send(result)
+        })
         app.get('/wishlist', verifyUser, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
@@ -111,21 +125,60 @@ async function run() {
             const alluser = await cursor.toArray();
             res.send(alluser)
         })
+
+
+        app.get('/user/seller', async (req, res) => {
+            const query = { role: 'seller' }
+            const user = await usersCollection.find(query).toArray();
+            res.send(user)
+        })
+        app.get('/user/buyer', async (req, res) => {
+            const query = { role: 'buyer' }
+            const user = await usersCollection.find(query).toArray();
+            res.send(user)
+        })
+
+
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await usersCollection.insertOne(user)
             res.send(result)
         })
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const result = await usersCollection.find(query).toArray();
+            res.send(result)
+        })
 
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isAdmin: user?.role === 'admin' })
+        })
+        app.get('/users/buyer/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isBuyer: user?.role === 'buyer' })
+        })
 
-        app.put('/users/admin/:id', async (req, res) => {
-            // const decodedEmail = req.decoded.email;
-            // const query = { email: decodedEmail };
-            // const user = await usersCollection.findOne(query);
+        app.get('/users/seller/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email }
+            const user = await usersCollection.findOne(query);
+            res.send({ isSeller: user?.role === 'seller' })
+        })
 
-            // if (user?.role !== 'admin') {
-            //     return res.status(403).send({ message: 'Forbidden Access' })
-            // }
+        app.put('/users/admin/:id', verifyUser, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ message: 'Forbidden Access' })
+            }
 
             const id = req.params.id;
             const filter = { _id: ObjectId(id) }

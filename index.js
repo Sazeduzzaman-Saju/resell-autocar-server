@@ -46,6 +46,7 @@ async function run() {
         const wishListCollection = client.db('AutoCar').collection('wishList');
         const usersCollection = client.db('AutoCar').collection('users');
         const reportedPostCollection = client.db('AutoCar').collection('reportPost');
+        const paymentsCollection = client.db('AutoCar').collection('payments');
 
         app.get('/carCategories', async (req, res) => {
             const query = {}
@@ -238,7 +239,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post("/create-payment-intent", async (req, res) => {
+        app.post('/create-payment-intent', async (req, res) => {
             const wishlist = req.body;
             const price = wishlist.price;
             const amount = price * 100;
@@ -246,9 +247,9 @@ async function run() {
 
             // Create a PaymentIntent with the order amount and currency
             const paymentIntent = await stripe.paymentIntents.create({
-                currency: "usd",
+                currency: 'usd',
                 amount: amount,
-                "payment_methods": [
+                "payment_method_types": [
                     "card"
                 ],
             });
@@ -258,7 +259,20 @@ async function run() {
             });
         });
 
-
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            const id = payment.wishListId
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    wishListId: payment.wishListId
+                }
+            }
+            const updatedResult = await wishListCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
 
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;

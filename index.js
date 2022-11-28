@@ -90,7 +90,11 @@ async function run() {
             const cars = await cursor.toArray();
             res.send(cars)
         })
-
+        app.get('/seller/post', async (req, res) => {
+            const query = { postStatus: 'sellerPost' }
+            const result = await carCollection.find(query).toArray();
+            res.send(result);
+        })
 
 
         app.post('/reportedpost', async (req, res) => {
@@ -103,6 +107,18 @@ async function run() {
             const reportedPost = await reportedPostCollection.find(query).toArray();
             res.send(reportedPost)
         })
+        app.delete('/reportedpost/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await reportedPostCollection.deleteOne(query);
+            res.send(result)
+        })
+
+
+
+
+
+
         app.post('/wishlist', async (req, res) => {
             const wishList = req.body;
             const result = await wishListCollection.insertOne(wishList);
@@ -149,8 +165,6 @@ async function run() {
             const alluser = await cursor.toArray();
             res.send(alluser)
         })
-
-
         app.get('/user/seller', async (req, res) => {
             const query = { role: 'seller' }
             const user = await usersCollection.find(query).toArray();
@@ -161,7 +175,13 @@ async function run() {
             const user = await usersCollection.find(query).toArray();
             res.send(user)
         })
-
+        app.delete('/users/:id', async (req, res) => {
+            console.log(req.params.id)
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await usersCollection.deleteOne(query);
+            res.send(result)
+        })
 
         app.post('/users', async (req, res) => {
             const user = req.body;

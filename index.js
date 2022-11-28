@@ -5,6 +5,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 require('dotenv').config();
 
@@ -120,6 +121,7 @@ async function run() {
             const result = await wishListCollection.deleteOne(query);
             res.send(result)
         })
+
         app.get('/wishlist', verifyUser, async (req, res) => {
             const email = req.query.email;
             const decodedEmail = req.decoded.email;
@@ -129,6 +131,13 @@ async function run() {
             const query = { email: email };
             const myWishlist = await wishListCollection.find(query).toArray();
             res.send(myWishlist)
+        })
+
+        app.get('/wishlist/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const singleCars = await wishListCollection.findOne(query);
+            res.send(singleCars);
         })
 
 
@@ -228,6 +237,27 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
         })
+
+        app.post("/create-payment-intent", async (req, res) => {
+            const wishlist = req.body;
+            const price = wishlist.price;
+            const amount = price * 100;
+
+
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: "usd",
+                amount: amount,
+                "payment_methods": [
+                    "card"
+                ],
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
 
 
         app.get('/jwt', async (req, res) => {
